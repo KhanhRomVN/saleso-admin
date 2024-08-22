@@ -30,7 +30,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
-
+  
 interface ImageUploaderProps {
   isOpen: boolean;
   onClose: () => void;

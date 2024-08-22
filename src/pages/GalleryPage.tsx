@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Image, Filter } from "lucide-react";
+import { Image, Filter, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import ImageUploader from "@/components/ImageUploader";
 import {
@@ -25,8 +25,6 @@ import axios from "axios";
 const ratios = [
   { value: "16:9", label: "16:9" },
   { value: "19:6", label: "19:6" },
-  { value: "1:2", label: "1:2" },
-  { value: "4:12", label: "4:12" },
   { value: "8:1", label: "8:1" },
   { value: "1:1", label: "1:1" },
   { value: "16:5", label: "16:5" },
@@ -56,10 +54,6 @@ const GalleryPage: React.FC = () => {
     status: "",
     keyword: "",
   });
-  const [sortOptions, setSortOptions] = useState({
-    field: "created_at",
-    order: "desc",
-  });
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -72,8 +66,6 @@ const GalleryPage: React.FC = () => {
         "http://localhost:8080/gallery/filter",
         {
           ...filters,
-          sortField: sortOptions.field,
-          sortOrder: sortOptions.order,
           page: pagination.page,
           limit: pagination.limit,
         }
@@ -86,11 +78,11 @@ const GalleryPage: React.FC = () => {
     } catch (error) {
       console.error("Error fetching images:", error);
     }
-  }, [filters, sortOptions, pagination.page, pagination.limit]);
+  }, [filters, pagination.page, pagination.limit]);
 
   useEffect(() => {
     fetchImages();
-  }, [fetchImages]);
+  }, [fetchImages, filters, pagination.page]);
 
   const handleRatioSelect = (ratio: string) => {
     setSelectedRatio(ratio);
@@ -98,15 +90,21 @@ const GalleryPage: React.FC = () => {
     setIsUploadDialogOpen(true);
   };
 
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (key: string, value: unknown) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
-  const handleSortChange = (field: string) => {
-    setSortOptions((prev) => ({
-      field,
-      order: prev.field === field && prev.order === "asc" ? "desc" : "asc",
+  const resetFilters = () => {
+    setFilters({
+      type: "",
+      ratio: "",
+      status: "",
+      keyword: "",
+    });
+    setPagination((prev) => ({
+      ...prev,
+      page: 1,
     }));
   };
 
@@ -142,11 +140,16 @@ const GalleryPage: React.FC = () => {
             </motion.div>
           </DialogContent>
         </Dialog>
-
-        <Button onClick={fetchImages} className="flex items-center">
-          <Filter className="mr-2 h-4 w-4" />
-          Apply Filters
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={resetFilters} className="flex items-center">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Reset Filters
+          </Button>
+          <Button onClick={fetchImages} className="flex items-center">
+            <Filter className="mr-2 h-4 w-4" />
+            Apply Filters
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-4 mb-4">
@@ -155,10 +158,10 @@ const GalleryPage: React.FC = () => {
             key={filterType}
             onValueChange={(value) => handleFilterChange(filterType, value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-background_secondary">
               <SelectValue placeholder={`Select ${filterType}`} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background_secondary">
               {(filterType === "type"
                 ? types
                 : filterType === "ratio"
@@ -176,12 +179,13 @@ const GalleryPage: React.FC = () => {
         <Input
           placeholder="Search by keyword"
           onChange={(e) => handleFilterChange("keyword", e.target.value)}
+          className="bg-background_secondary"
         />
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        {images.map((image) => (
-          <GalleryCard key={image._id} image={image} />
+        {images.map((image, index) => (
+          <GalleryCard key={index} image={image} />
         ))}
       </div>
 
@@ -217,7 +221,6 @@ const GalleryPage: React.FC = () => {
         isOpen={isUploadDialogOpen}
         onClose={() => setIsUploadDialogOpen(false)}
         selectedRatio={selectedRatio}
-        onImageUploaded={fetchImages}
       />
     </div>
   );
