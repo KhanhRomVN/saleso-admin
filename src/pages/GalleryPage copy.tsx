@@ -1,5 +1,4 @@
-// GalleryPage.tsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,7 +7,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Image, Filter } from "lucide-react";
+import { Image, Filter, ArrowUpDown, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import ImageUploader from "@/components/ImageUploader";
 import {
@@ -19,7 +18,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import GalleryCard from "@/components/GalleryCard";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import axios from "axios";
 
 const ratios = [
@@ -66,7 +71,11 @@ const GalleryPage: React.FC = () => {
     totalPages: 1,
   });
 
-  const fetchImages = useCallback(async () => {
+  useEffect(() => {
+    fetchImages();
+  }, [filters, sortOptions, pagination.page]);
+
+  const fetchImages = async () => {
     try {
       const response = await axios.post(
         "http://localhost:8080/gallery/filter",
@@ -86,11 +95,7 @@ const GalleryPage: React.FC = () => {
     } catch (error) {
       console.error("Error fetching images:", error);
     }
-  }, [filters, sortOptions, pagination.page, pagination.limit]);
-
-  useEffect(() => {
-    fetchImages();
-  }, [fetchImages]);
+  };
 
   const handleRatioSelect = (ratio: string) => {
     setSelectedRatio(ratio);
@@ -143,35 +148,51 @@ const GalleryPage: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        <Button onClick={fetchImages} className="flex items-center">
+        <Button onClick={() => fetchImages()} className="flex items-center">
           <Filter className="mr-2 h-4 w-4" />
           Apply Filters
         </Button>
       </div>
 
       <div className="grid grid-cols-4 gap-4 mb-4">
-        {["type", "ratio", "status"].map((filterType) => (
-          <Select
-            key={filterType}
-            onValueChange={(value) => handleFilterChange(filterType, value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={`Select ${filterType}`} />
-            </SelectTrigger>
-            <SelectContent>
-              {(filterType === "type"
-                ? types
-                : filterType === "ratio"
-                ? ratios
-                : statuses
-              ).map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ))}
+        <Select onValueChange={(value) => handleFilterChange("type", value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Type" />
+          </SelectTrigger>
+          <SelectContent>
+            {types.map((type) => (
+              <SelectItem key={type.value} value={type.value}>
+                {type.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select onValueChange={(value) => handleFilterChange("ratio", value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Ratio" />
+          </SelectTrigger>
+          <SelectContent>
+            {ratios.map((ratio) => (
+              <SelectItem key={ratio.value} value={ratio.value}>
+                {ratio.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select onValueChange={(value) => handleFilterChange("status", value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Status" />
+          </SelectTrigger>
+          <SelectContent>
+            {statuses.map((status) => (
+              <SelectItem key={status.value} value={status.value}>
+                {status.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <Input
           placeholder="Search by keyword"
@@ -181,7 +202,49 @@ const GalleryPage: React.FC = () => {
 
       <div className="grid grid-cols-4 gap-4">
         {images.map((image) => (
-          <GalleryCard key={image._id} image={image} />
+          <Card key={image._id} className="overflow-hidden">
+            <CardHeader className="p-2">
+              <CardTitle className="text-sm font-medium">
+                {image.type}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <img
+                src={image.image_uri}
+                alt={image.path}
+                className="w-full h-40 object-cover"
+              />
+            </CardContent>
+            <CardFooter className="p-2 flex flex-col items-start text-xs">
+              <div className="flex justify-between w-full mb-1">
+                <span>Ratio: {image.ratio}</span>
+                <span
+                  className={`px-2 py-1 rounded ${
+                    image.status === "ongoing"
+                      ? "bg-green-200 text-green-800"
+                      : image.status === "upcoming"
+                      ? "bg-blue-200 text-blue-800"
+                      : "bg-red-200 text-red-800"
+                  }`}
+                >
+                  {image.status}
+                </span>
+              </div>
+              <span className="truncate w-full mb-1" title={image.path}>
+                Path: {image.path}
+              </span>
+              <div className="flex justify-between w-full">
+                <span className="flex items-center">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  {new Date(image.startDate).toLocaleDateString()}
+                </span>
+                <span className="flex items-center">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  {new Date(image.endDate).toLocaleDateString()}
+                </span>
+              </div>
+            </CardFooter>
+          </Card>
         ))}
       </div>
 

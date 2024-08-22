@@ -97,6 +97,15 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const handleSubmit = async () => {
     try {
+      console.log({
+        image_uri: imageUri,
+        type,
+        path,
+        ratio: selectedRatio,
+        startDate: startDate?.toISOString(),
+        endDate: endDate?.toISOString(),
+      });
+
       const response = await axios.post("http://localhost:8080/gallery", {
         image_uri: imageUri,
         type,
