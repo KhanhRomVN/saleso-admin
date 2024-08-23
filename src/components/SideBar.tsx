@@ -38,8 +38,8 @@ const menuItems = [
         icon: <Store className="h-4 w-4" />,
       },
       {
-        text: "Discount",
-        path: "/discount",
+        text: "Categories",
+        path: "/categories",
         icon: <DollarSign className="h-4 w-4" />,
       },
     ],
