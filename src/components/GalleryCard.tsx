@@ -1,25 +1,17 @@
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Calendar,
-  Image as ImageIcon,
   Ratio,
   FolderOpen,
   Activity,
   Clock,
   XCircle,
   ChevronRight,
-  Save,
-  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -27,11 +19,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
+import axios from "axios";
 
 interface ImageData {
   _id: string;
@@ -72,6 +64,41 @@ const statusConfig: StatusConfig = {
 
 const GalleryCard: React.FC<GalleryCardProps> = ({ image }) => {
   const StatusIcon = statusConfig[image.status].icon;
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedPath, setEditedPath] = useState(image.path);
+  const [isViewImageDialogOpen, setIsViewImageDialogOpen] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const handlePathEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handlePathSave = async () => {
+    try {
+      await axios.put(`http://localhost:8080/gallery/${image._id}`, {
+        path: editedPath,
+      });
+      setIsEditing(false);
+      toast.success("Path updated successfully");
+    } catch (error) {
+      console.error("Error updating path:", error);
+      toast.error("Failed to update path");
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await axios.delete(`http://localhost:8080/gallery/${image._id}`);
+      toast.success("Image deleted successfully");
+      setIsDeleteDialogOpen(false);
+      // You might want to trigger a re-fetch of the gallery images here
+      // or remove the image from the local state if you're managing it in the parent component
+    } catch (error) {
+      console.error("Error deleting image:", error);
+      toast.error("Failed to delete image");
+    }
+  };
 
   return (
     <>
@@ -80,28 +107,48 @@ const GalleryCard: React.FC<GalleryCardProps> = ({ image }) => {
         whileTap={{ scale: 0.98 }}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}
       >
-        <Card className="overflow-hidden  shadow-lg hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-0 relative ">
-            <motion.img
-              src={image.image_uri}
-              alt={image.path}
-              className="w-full h-56 object-cover"
-              whileHover={{ scale: 1.1 }}
-              transition={{ duration: 0.3 }}
-            />
-            <AnimatePresence>
-              <motion.div
-                className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <Button variant="secondary" size="sm" className="group">
-                  View Image
-                  <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-              </motion.div>
-            </AnimatePresence>
+        <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardContent className="p-0 relative">
+            <motion.div
+              onHoverStart={() => setIsHovering(true)}
+              onHoverEnd={() => setIsHovering(false)}
+            >
+              <motion.img
+                src={image.image_uri}
+                alt={image.path}
+                className="w-full h-56 object-cover"
+                whileHover={{ scale: 1.1 }}
+                transition={{ duration: 0.3 }}
+              />
+              <AnimatePresence>
+                {isHovering && (
+                  <motion.div
+                    className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center gap-2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="group"
+                      onClick={() => setIsViewImageDialogOpen(true)}
+                    >
+                      View
+                      <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                      className="bg-red-500"
+                    >
+                      Delete
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
             <Badge
               className={`absolute top-2 right-2 ${
                 statusConfig[image.status].color
@@ -114,35 +161,39 @@ const GalleryCard: React.FC<GalleryCardProps> = ({ image }) => {
               {image.type}
             </Badge>
           </CardContent>
-          <CardFooter className="p-4 flex flex-col items-start space-y-2  bg-background_secondary">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center w-full text-sm">
-                    <Ratio className="w-4 h-4 mr-2 text-gray-500" />
-                    <span className="font-medium">{image.ratio}</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Aspect ratio of the image</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center w-full text-sm">
-                    <FolderOpen className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0" />
-                    <span className="truncate font-medium" title={image.path}>
-                      {image.path}
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>File path: {image.path}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          <CardFooter className="p-4 flex flex-col items-start space-y-2 bg-background_secondary">
+            <div className="flex items-center w-full text-sm">
+              <Ratio className="w-4 h-4 mr-2 text-gray-500" />
+              <span className="font-medium">{image.ratio}</span>
+            </div>
+            <div className="flex items-center w-full text-sm">
+              <FolderOpen className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0" />
+              {isEditing ? (
+                <Input
+                  value={editedPath}
+                  onChange={(e) => setEditedPath(e.target.value)}
+                  className="flex-grow"
+                />
+              ) : (
+                <span
+                  className="truncate font-medium cursor-pointer"
+                  title={image.path}
+                  onClick={handlePathEdit}
+                >
+                  {image.path}
+                </span>
+              )}
+            </div>
+            {isEditing && (
+              <div className="flex gap-2">
+                <Button onClick={handlePathSave} size="sm">
+                  Update Path
+                </Button>
+                <Button size="sm" onClick={() => setIsEditing(false)}>
+                  Cancel
+                </Button>
+              </div>
+            )}
             <div className="flex justify-between w-full text-xs text-gray-500">
               {["startDate", "endDate"].map((dateType) => (
                 <span key={dateType} className="flex items-center">
@@ -156,6 +207,56 @@ const GalleryCard: React.FC<GalleryCardProps> = ({ image }) => {
           </CardFooter>
         </Card>
       </motion.div>
+
+      {/* View Image Dialog */}
+      <Dialog
+        open={isViewImageDialogOpen}
+        onOpenChange={setIsViewImageDialogOpen}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Image Preview</DialogTitle>
+          </DialogHeader>
+          <img
+            src={image.image_uri}
+            alt={image.path}
+            className="w-full h-auto object-contain"
+          />
+          <DialogFooter>
+            <Button onClick={() => setIsViewImageDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            <div className="flex items-center space-x-2 text-yellow-500">
+              <AlertTriangle />
+              <span>Are you sure you want to delete this image?</span>
+            </div>
+            <p className="mt-2">This action cannot be undone.</p>
+          </DialogDescription>
+          <DialogFooter className="sm:justify-start">
+            <Button type="button" variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
