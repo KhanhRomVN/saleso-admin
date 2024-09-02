@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import GalleryCard from "@/components/GalleryCard";
-import axios from "axios";
+import { postPublic } from "@/utils/authUtils";
 
 const ratios = [
   { value: "16:9", label: "16:9" },
@@ -43,11 +43,22 @@ const statuses = [
   { value: "expired", label: "Expired" },
 ];
 
+interface GalleryImage {
+  _id: string;
+  type: string;
+  image_uri: string;
+  path: string;
+  ratio: string;
+  status: "ongoing" | "upcoming" | "expired";
+  startDate: string;
+  endDate: string;
+}
+
 const GalleryPage: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedRatio, setSelectedRatio] = useState("");
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState<GalleryImage[]>([]);
   const [filters, setFilters] = useState({
     type: "",
     ratio: "",
@@ -62,18 +73,18 @@ const GalleryPage: React.FC = () => {
 
   const fetchImages = useCallback(async () => {
     try {
-      const response = await axios.post(
-        "http://localhost:8080/gallery/filter",
-        {
-          ...filters,
-          page: pagination.page,
-          limit: pagination.limit,
-        }
-      );
-      setImages(response.data.images);
+      const response = await postPublic<{
+        images: GalleryImage[];
+        totalPages: number;
+      }>("/gallery/filter", {
+        ...filters,
+        page: pagination.page,
+        limit: pagination.limit,
+      });
+      setImages(response.images);
       setPagination((prev) => ({
         ...prev,
-        totalPages: response.data.totalPages,
+        totalPages: response.totalPages,
       }));
     } catch (error) {
       console.error("Error fetching images:", error);

@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "react-toastify";
-import axios from "axios";
+import { putPublic, delPublic } from "@/utils/authUtils";
 
 interface ImageData {
   _id: string;
@@ -76,9 +76,7 @@ const GalleryCard: React.FC<GalleryCardProps> = ({ image }) => {
 
   const handlePathSave = async () => {
     try {
-      await axios.put(`http://localhost:8080/gallery/${image._id}`, {
-        path: editedPath,
-      });
+      await putPublic(`/gallery/${image._id}`, { path: editedPath });
       setIsEditing(false);
       toast.success("Path updated successfully");
     } catch (error) {
@@ -89,7 +87,7 @@ const GalleryCard: React.FC<GalleryCardProps> = ({ image }) => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`http://localhost:8080/gallery/${image._id}`);
+      await delPublic(`/gallery/${image._id}`);
       toast.success("Image deleted successfully");
       setIsDeleteDialogOpen(false);
       // You might want to trigger a re-fetch of the gallery images here

@@ -1,9 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { BACKEND_URI } from "@/api";
+import { postPublic } from "@/utils/authUtils";
+
+interface LoginResponse {
+  currentUser: Record<string, unknown>;
+  accessToken: string;
+  refreshToken: string;
+}
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,12 +17,13 @@ const LoginPage: React.FC = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post(`${BACKEND_URI}/auth/login`, {
+      const response = await postPublic<LoginResponse>("/auth/login", {
         email,
         password,
         role: "seller",
       });
-      const { currentUser, accessToken, refreshToken } = response.data;
+
+      const { currentUser, accessToken, refreshToken } = response;
       localStorage.setItem("currentUser", JSON.stringify(currentUser));
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);

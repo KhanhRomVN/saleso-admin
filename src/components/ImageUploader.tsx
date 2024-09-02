@@ -29,8 +29,8 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
-  
+import { postPublic } from "@/utils/authUtils";
+
 interface ImageUploaderProps {
   isOpen: boolean;
   onClose: () => void;
@@ -106,7 +106,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         endDate: endDate?.toISOString(),
       });
 
-      const response = await axios.post("http://localhost:8080/gallery", {
+      const response = await postPublic("/gallery", {
         image_uri: imageUri,
         type,
         path,
@@ -114,7 +114,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         startDate: startDate?.toISOString(),
         endDate: endDate?.toISOString(),
       });
-      console.log("Image uploaded successfully:", response.data);
+
+      console.log("Image uploaded successfully:", response);
       toast.success("Image uploaded successfully", {
         icon: <Check className="h-4 w-4 text-green-500" />,
       });

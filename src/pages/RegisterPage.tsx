@@ -1,12 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { BACKEND_URI } from "@/api";
+import { postPublic } from "@/utils/authUtils";
 
-const EmailPage: React.FC = () => {
+interface ApiError extends Error {
+  response?: {
+    status: number;
+  };
+}
+
+const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -16,10 +21,13 @@ const EmailPage: React.FC = () => {
 
   const handleEmailSubmit = async () => {
     try {
-      await axios.post(`${BACKEND_URI}/auth/email-verify`, { email });
+      await postPublic("/auth/email-verify", { email });
       setShowOTPInput(true);
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 400) {
+      if (
+        error instanceof Error &&
+        (error as ApiError).response?.status === 400
+      ) {
         console.error("Email already registered");
         setTimeout(() => {
           navigate("/login");
@@ -32,13 +40,13 @@ const EmailPage: React.FC = () => {
 
   const handleOTPSubmit = async () => {
     try {
-      const response = await axios.post(`${BACKEND_URI}/auth/register-otp`, {
+      const response = await postPublic("/auth/register-otp", {
         email,
         otp,
         username,
         password,
       });
-      console.log(response.data);
+      console.log(response);
       navigate("/login");
     } catch (error) {
       console.error("Error verifying OTP:", error);
@@ -107,4 +115,4 @@ const EmailPage: React.FC = () => {
   );
 };
 
-export default EmailPage;
+export default RegisterPage;
